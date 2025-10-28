@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-3.xsd">
+    
+    <entity entity-name="ExampleEntity" package="com.example" 
+            short-alias="examples" cache="true" use="configuration">
+        
+        <!-- Primary Key -->
+        <field name="exampleEntityId" type="id" is-pk="true"/>
+        
+        <!-- Basic Fields -->
+        <field name="name" type="text-medium" enable-localization="true"/>
+        <field name="description" type="text-long" enable-localization="true"/>
+        <field name="sequenceNum" type="number-integer"/>
+        
+        <!-- Status and Type -->
+        <field name="statusId" type="id" enable-audit-log="true"/>
+        <field name="exampleTypeEnumId" type="id"/>
+        
+        <!-- Date Range -->
+        <field name="fromDate" type="date-time"/>
+        <field name="thruDate" type="date-time"/>
+        
+        <!-- Audit Fields -->
+        <field name="createdDate" type="date-time"/>
+        <field name="createdByUserAccountId" type="id" enable-audit-log="true"/>
+        <field name="lastUpdatedStamp" type="date-time"/>
+        <field name="lastUpdatedByUserAccountId" type="id" enable-audit-log="true"/>
+        
+        <!-- Relationships -->
+        <relationship type="one" related="moqui.basic.StatusItem" short-alias="status">
+            <key-map field-name="statusId"/></relationship>
+        <relationship type="one" related="moqui.basic.Enumeration" short-alias="type">
+            <key-map field-name="exampleTypeEnumId" related="enumId"/></relationship>
+        
+        <!-- Seed Data -->
+        <seed-data>
+            <!-- Enumeration Type -->
+            <moqui.basic.EnumerationType description="Example Type" enumTypeId="ExampleType"/>
+            
+            <!-- Enumeration Values -->
+            <moqui.basic.Enumeration description="Type A" enumId="EtTypeA" 
+                                     enumTypeId="ExampleType" sequenceNum="1"/>
+            <moqui.basic.Enumeration description="Type B" enumId="EtTypeB" 
+                                     enumTypeId="ExampleType" sequenceNum="2"/>
+            
+            <!-- Status Type -->
+            <moqui.basic.StatusType description="Example Status" statusTypeId="ExampleStatus"/>
+            
+            <!-- Status Items -->
+            <moqui.basic.StatusItem description="Draft" sequenceNum="1" 
+                                    statusId="EsDraft" statusTypeId="ExampleStatus"/>
+            <moqui.basic.StatusItem description="Active" sequenceNum="10" 
+                                    statusId="EsActive" statusTypeId="ExampleStatus"/>
+            <moqui.basic.StatusItem description="Inactive" sequenceNum="99" 
+                                    statusId="EsInactive" statusTypeId="ExampleStatus"/>
+        </seed-data>
+    </entity>
+    
+</entities>

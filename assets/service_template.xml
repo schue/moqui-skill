@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
+    
+    <service verb="verb" noun="Noun" authenticate="true">
+        <description>Brief description of what the service does</description>
+        <implements service="org.moqui.impl.ServiceInterface"/>
+        
+        <in-parameters>
+            <parameter name="inputParameter" type="text-medium" required="true"/>
+            <!-- Add more parameters as needed -->
+        </in-parameters>
+        
+        <out-parameters>
+            <parameter name="result" type="Map"/>
+            <parameter name="message" type="String"/>
+        </out-parameters>
+        
+        <actions>
+            <!-- Add your custom logic here -->
+            <set field="result" from="[:]"/>
+            <set field="result.processed" from="true"/>
+            <set field="result.timestamp" from="ec.user.nowTimestamp"/>
+            <set field="message" from="Custom verb noun completed successfully"/>
+        </actions>
+    </service>
+    
+</services>

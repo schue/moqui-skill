@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/component-definition-3.xsd">
+    
+    <!-- Component Dependencies -->
+    <depends-on name="moqui-basic"/>
+    <depends-on name="moqui-security"/>
+    <depends-on name="mantle-udm"/>
+    
+    <!-- Webapp Configuration -->
+    <webapp name="webroot" title="Example Component">
+        <root-screen host=".*" location="component://example/screen/ExampleScreens.xml"/>
+    </webapp>
+    
+</component>
