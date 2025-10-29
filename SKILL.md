@@ -389,6 +389,173 @@ Template files for starting new components:
 4. **Implement audit logging** for important operations
 5. **Use parameterized queries** to prevent SQL injection
 
+## Entity Field Validation
+
+### Always Validate Field Names
+Before using field names in code, verify against entity definitions:
+```bash
+# Find entity definition
+find . -name "*.xml" -path "*/entity/*" | xargs grep -l "entity-name=\"YourEntity\""
+
+# Check available fields
+grep -A 5 -B 5 "<field name="fieldName"*/entity/YourEntity.xml
+```
+
+### Common Field Name Confusions
+| Intended Field | Correct Field | Entity | Context |
+|---------------|---------------|---------|---------|
+| trackingUrl | masterTrackingUrl | ShipmentRouteSegment | Overall shipment tracking |
+| trackingUrl | trackingUrl | ShipmentPackageRouteSeg | Package-level tracking |
+| trackingIdNumber | masterTrackingCode | ShipmentRouteSegment | Overall tracking number |
+| trackingIdNumber | trackingCode | ShipmentPackageRouteSeg | Package tracking number |
+| externalId | otherPartyOrderId | OrderPart | External system reference |
+
+### Field Validation Workflow
+1. **Check entity XML** for correct field names
+2. **Use field mapping tables** when similar fields exist
+3. **Validate with entity-find** before using in code
+4. **Test field access** in development environment
+
+## Service Behavior Understanding
+
+### Critical Service Distinctions
+Services can have misleading names - always verify actual behavior:
+
+| Service | What It Actually Does | When to Use |
+|----------|---------------------|-------------|
+| ship#OrderPart | Creates NEW shipment + packs items + marks shipped | No existing shipment |
+| create#OrderPartShipment | Creates shipment record only | Need custom packing logic |
+| ship#Shipment | Marks existing shipment as shipped | Shipment exists, needs status change |
+| update#OrderStatus | Changes order status only | Status transition needed |
+
+### Service Verification Workflow
+1. **Read service implementation** in XML files
+2. **Check service description** and parameters
+3. **Look for entity-auto** vs custom implementations
+4. **Test service behavior** in development
+5. **Document actual behavior** for future reference
+
+### Common Service Usage Patterns
+```xml
+<!-- WRONG: Assumes ship#OrderPart updates existing shipment -->
+<service-call name="ship#OrderPart" in-map="[orderId: orderId]"/>
+
+<!-- CORRECT: Different approaches for existing vs new -->
+<if condition="existingShipment">
+    <service-call name="ship#Shipment" in-map="[shipmentId: shipmentId]"/>
+<else>
+    <service-call name="ship#OrderPart" in-map="[orderId: orderId]"/>
+</if>
+```
+
+## Groovy Best Practices in Moqui
+
+### Closure Scope Management
+Groovy closures have different variable scope rules than traditional blocks:
+
+#### Problem Pattern
+```groovy
+// BROKEN: logger not accessible in closure
+existingShipments.each { shipment ->
+    logger.info("Shipment: ${shipment.shipmentId}") // NullPointerException!
+}
+```
+
+#### Solution Patterns
+```groovy
+// CORRECT: Use traditional for loop for outer variable access
+for (EntityValue shipment in existingShipments) {
+    logger.info("Shipment: ${shipment.shipmentId}") // Works!
+}
+
+// CORRECT: Explicit variable passing
+existingShipments.each { shipment ->
+    def log = logger // Explicit reference
+    log.info("Shipment: ${shipment.shipmentId}")
+}
+```
+
+### Scope Rules
+- **.each { } closures** have limited outer variable access
+- **Traditional for loops** maintain full scope access
+- **Explicit variable passing** works but is verbose
+- **Prefer for-in loops** when accessing outer variables
+
+## Systematic Debugging Approach
+
+### Debugging Priority Order
+1. **Syntax Errors First** - Must compile before logic testing
+2. **Entity Field Names** - Validate against definitions
+3. **Service Behavior** - Verify what services actually do
+4. **Logic Flow** - Check business logic after basics work
+5. **Performance Issues** - Optimize after functionality works
+
+### Incremental Testing Workflow
+```bash
+# 1. Fix syntax errors
+groovy -cp . service/YourService.groovy
+
+# 2. Test basic functionality
+# Run service with minimal parameters
+
+# 3. Add complex logic incrementally
+# Test each addition separately
+
+# 4. Full integration testing
+# Test complete workflow
+```
+
+### Brace Balance Validation
+```bash
+# Quick brace check
+open_count=$(grep -o '{' service/YourService.groovy | wc -l)
+close_count=$(grep -o '}' service/YourService.groovy | wc -l)
+echo "Open: $open_count, Close: $close_count"
+
+# Should be equal for valid syntax
+```
+
+## Refactoring Mindset
+
+### Before Writing Custom Logic
+Always ask these questions first:
+
+1. **Is there a Moqui service that does this?**
+   - Check existing services in mantle-* components
+   - Look for entity-auto services
+   - Prefer built-in over custom implementation
+
+2. **Am I duplicating existing functionality?**
+   - Review service patterns in references/
+   - Check if custom logic is necessary
+   - Consider extending vs replacing
+
+3. **Is this getting too complex?**
+   - More than 20 lines = consider refactoring
+   - Multiple nested conditions = simplify
+   - Custom entity creation = use services
+
+### Refactoring Example
+```groovy
+// COMPLEX: Manual shipment creation (48 lines)
+if (existingShipment) {
+    // Manual tracking updates
+    // Manual route segment creation  
+    // Manual shipment status changes
+} else {
+    // Manual shipment creation
+    // Manual package creation
+    // Manual status updates
+}
+
+// SIMPLE: Use Moqui services (15 lines)
+if (existingShipment) {
+    ec.service.sync().name("ship#Shipment")(shipmentId: shipmentId)
+} else {
+    ec.service.sync().name("ship#OrderPart")(orderId: orderId)
+}
+```
+
 ## Common Pitfalls to Avoid
 
 1. **Missing Dependencies** - Always declare component dependencies in component.xml
@@ -401,6 +568,10 @@ Template files for starting new components:
 8. **Missing Localization** - Use enable-localization for user-facing text
 9. **Missing Audit Fields** - Include createdDate, createdByUserAccountId, lastUpdatedStamp
 10. **Incorrect Service Names** - Follow verb-noun convention
+11. **Invalid Field Names** - Always validate against entity definitions
+12. **Service Misunderstanding** - Verify what services actually do before using
+13. **Closure Scope Issues** - Use traditional loops for outer variable access
+14. **Over-engineering** - Prefer existing Moqui services over custom logic
 
 ## Troubleshooting
 

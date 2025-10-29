@@ -2,6 +2,74 @@
 
 This document provides common Moqui entity patterns and examples for reference when creating entities.
 
+## Entity Hierarchies and Relationships
+
+### Shipment Entity Hierarchy
+Understanding Moqui's shipment entity relationships is crucial for proper tracking:
+
+```
+ShipmentHeader (overall shipment)
+├── ShipmentRouteSegment (shipping leg/carrier)
+│   ├── masterTrackingCode (overall tracking number)
+│   └── masterTrackingUrl (overall tracking URL)
+└── ShipmentPackageRouteSeg (individual packages)
+    ├── trackingCode (package tracking number)
+    └── trackingUrl (package tracking URL)
+```
+
+### Key Relationship Patterns
+| Parent Entity | Child Entity | Relationship Type | Common Fields |
+|--------------|--------------|------------------|----------------|
+| OrderHeader | OrderPart | one-to-many | orderId, orderPartSeqId |
+| ShipmentHeader | ShipmentRouteSegment | one-to-many | shipmentId |
+| ShipmentRouteSegment | ShipmentPackageRouteSeg | one-to-many | shipmentId, shipmentRouteSegmentSeqId |
+| OrderPart | ShipmentItemSourceOrderItem | one-to-many | orderId, orderPartSeqId |
+
+### Tracking Field Patterns
+Different entities use different field names for tracking:
+
+| Entity | Tracking Number Field | Tracking URL Field | Usage |
+|--------|-------------------|------------------|--------|
+| ShipmentRouteSegment | masterTrackingCode | masterTrackingUrl | Overall shipment tracking |
+| ShipmentPackageRouteSeg | trackingCode | trackingUrl | Individual package tracking |
+| OrderPart | otherPartyOrderId | - | External system reference |
+
+### Relationship Definition Examples
+```xml
+<!-- One-to-Many: Order to Order Parts -->
+<relationship type="many" related="com.example.OrderPart" short-alias="parts">
+    <key-map field-name="orderId"/></relationship>
+
+<!-- Many-to-One: Order Part to Order -->
+<relationship type="one" related="com.example.OrderHeader" short-alias="order">
+    <key-map field-name="orderId"/></relationship>
+
+<!-- One-to-Many with Composite Key: Route Segment to Packages -->
+<relationship type="many" related="com.example.ShipmentPackageRouteSeg" short-alias="packages">
+    <key-map field-name="shipmentId"/>
+    <key-map field-name="shipmentRouteSegmentSeqId"/>
+</relationship>
+```
+
+### Query Patterns for Hierarchies
+```xml
+<!-- Find all packages for a shipment -->
+<entity-find entity-name="mantle.shipment.ShipmentPackageRouteSeg" list="packageList">
+    <econdition field-name="shipmentId" from="shipmentId"/>
+</entity-find>
+
+<!-- Find route segment for packages -->
+<entity-find entity-name="mantle.shipment.ShipmentRouteSegment" list="routeList">
+    <econdition field-name="shipmentId" from="shipmentId"/>
+</entity-find>
+
+<!-- Join shipment with order parts -->
+<entity-find entity-name="mantle.order.OrderPart" list="orderParts">
+    <econdition field-name="orderId" from="orderId"/>
+    <relationship-join relationship="orderItems"/>
+</entity-find>
+```
+
 ## Entity Structure Template
 
 ```xml
