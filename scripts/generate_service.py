@@ -31,7 +31,7 @@ def generate_create_service(verb, noun, entity_name=None):
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     
-    <service verb="{verb}" noun="{noun}" authenticate="true" transaction="timeout">
+    <service verb="{verb}" noun="{noun}" authenticate="true">
         <description>Create a new {noun.lower()} record</description>
         <implements service="org.moqui.impl.ServiceInterface"/>
         
@@ -65,7 +65,7 @@ def generate_update_service(verb, noun, entity_name=None):
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     
-    <service verb="{verb}" noun="{noun}" authenticate="true" transaction="timeout">
+    <service verb="{verb}" noun="{noun}" authenticate="true">
         <description>Update an existing {noun.lower()} record</description>
         <implements service="org.moqui.impl.ServiceInterface"/>
         
@@ -182,7 +182,7 @@ def generate_delete_service(verb, noun, entity_name=None):
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     
-    <service verb="{verb}" noun="{noun}" authenticate="true" transaction="timeout">
+    <service verb="{verb}" noun="{noun}" authenticate="true">
         <description>Delete a {noun.lower()} record</description>
         
         <in-parameters>

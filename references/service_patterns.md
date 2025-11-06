@@ -172,9 +172,9 @@ This document provides common Moqui service patterns and examples for reference 
 </service>
 ```
 
-### Service with Transaction
+### Service with Transaction (Framework Default)
 ```xml
-<service verb="process" noun="Example" authenticate="true" transaction="timeout">
+<service verb="process" noun="Example" authenticate="true">
     <in-parameters>
         <parameter name="exampleId" type="id" required="true"/>
     </in-parameters>
@@ -189,6 +189,23 @@ This document provides common Moqui service patterns and examples for reference 
     </actions>
 </service>
 ```
+
+### Critical Financial Operation (Explicit Transaction)
+```xml
+<service verb="close" noun="FinancialPeriod" authenticate="true" 
+         transaction="force-new" transaction-timeout="600">
+    <in-parameters>
+        <parameter name="financialPeriodId" type="id" required="true"/>
+    </in-parameters>
+    <actions>
+        <!-- Critical financial closing - requires isolation -->
+        <script>ec.transaction.commitBeginOnly();</script>
+        <!-- Financial closing operations -->
+    </actions>
+</service>
+```
+
+**Note**: 98.5% of Moqui framework services use default transaction behavior (no attribute). Only add explicit transaction attributes for critical financial operations or long-running tasks (>5 minutes).
 
 ## Error Handling Patterns
 

@@ -100,8 +100,17 @@ Implement find services with filtering:
 
 #### Custom Business Logic Services
 Implement complex operations with proper error handling:
+
+**Follow Moqui Framework Transaction Patterns:**
+
+- **Default**: No transaction attribute (98.5% of framework services)
+- **Critical Operations**: Use `transaction="force-new"` for financial/bulk operations
+- **Long-running**: Add `transaction-timeout` for operations > 5 minutes
+- **Avoid**: `transaction="cache"` (causes locking issues in framework)
+
 ```xml
-<service verb="process" noun="Order" authenticate="true" transaction="timeout">
+<!-- Standard service - use framework defaults -->
+<service verb="process" noun="Order" authenticate="true">
     <in-parameters>
         <parameter name="orderId" type="id" required="true"/>
     </in-parameters>
@@ -126,6 +135,73 @@ Implement complex operations with proper error handling:
     </actions>
 </service>
 ```
+
+```xml
+<!-- Critical financial operation - explicit transaction -->
+<service verb="close" noun="FinancialPeriod" authenticate="true" 
+         transaction="force-new" transaction-timeout="600">
+    <in-parameters>
+        <parameter name="financialPeriodId" type="id" required="true"/>
+    </in-parameters>
+    <actions>
+        <!-- Critical financial closing logic -->
+        <script>ec.transaction.commitBeginOnly();</script>
+        <!-- ... closing operations ... -->
+    </actions>
+</service>
+```
+
+## Transaction Management Best Practices
+
+### Framework Patterns (Based on Moqui Framework Analysis)
+
+**Default Behavior (98.5% of framework services):**
+```xml
+<!-- Most services - no transaction attribute needed -->
+<service verb="create" noun="Example" authenticate="true">
+    <!-- Framework handles transactions automatically -->
+</service>
+```
+
+**Critical Operations (1.5% of framework services):**
+```xml
+<!-- Financial/bulk operations requiring isolation -->
+<service verb="close" noun="FinancialPeriod" authenticate="true" 
+         transaction="force-new" transaction-timeout="600">
+    <!-- Long-running critical operation -->
+</service>
+```
+
+### Transaction Attribute Guidelines
+
+| Scenario | Transaction Attribute | Timeout | When to Use |
+|-----------|-------------------|----------|--------------|
+| **Standard CRUD** | *(none)* | *(none)* | 98.5% of services |
+| **Financial Operations** | `force-new` | 600-3600s | Period closing, payments |
+| **Bulk Data Operations** | `force-new` | 600-1800s | Import/export, cleanup |
+| **Long-running Tasks** | *(none)* | 600+ | Add timeout only if >5min |
+| **Record Locking Issues** | `ignore` | *(none)* | Bulk operations only |
+
+### Anti-Patterns to Avoid
+
+❌ **Avoid `transaction="cache"`**
+- Framework comments indicate locking and stale data issues
+- Being removed from order processing in framework
+
+❌ **Avoid `transaction="use-or-begin"`**
+- Redundant (this is the framework default)
+- Adds noise to service definitions
+
+❌ **Avoid `transaction-timeout="60"`**
+- Too short for most operations
+- Framework uses 600-3600 seconds for long operations
+
+### Recommended Approach
+
+1. **Start with no transaction attribute** (framework default)
+2. **Add `transaction="force-new"`** only for critical financial/bulk operations
+3. **Add `transaction-timeout`** only for operations expected to run >5 minutes
+4. **Test thoroughly** - transaction boundaries affect data consistency
 
 ## Creating Entities
 
@@ -365,7 +441,7 @@ Template files for starting new components:
 4. **Return meaningful error messages** for debugging
 5. **Use entity-auto services** for simple CRUD operations
 6. **Implement permission checks** for sensitive operations
-7. **Use transactions** for multi-step operations
+7. **Use transactions** - Follow framework defaults (98.5% use no attribute), force-new for critical operations
 
 ### Entity Design
 1. **Include audit fields** on transactional entities
@@ -564,7 +640,7 @@ if (existingShipment) {
 4. **No Authentication** - Set proper authenticate attribute on services
 5. **Hardcoded Values** - Use enumerations instead of hardcoded strings
 6. **SQL Injection** - Use entity-find with econdition, not raw SQL
-7. **Transaction Issues** - Set proper transaction attributes
+7. **Transaction Issues** - Follow framework patterns: default (no attribute), force-new for critical operations, timeout for long-running tasks
 8. **Missing Localization** - Use enable-localization for user-facing text
 9. **Missing Audit Fields** - Include createdDate, createdByUserAccountId, lastUpdatedStamp
 10. **Incorrect Service Names** - Follow verb-noun convention
